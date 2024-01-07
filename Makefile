@@ -1,14 +1,20 @@
 .SILENT :
-.PHONY : test
+.PHONY : test-debian test-alpine test
 
-update-dependencies:
-	docker pull jwilder/docker-gen:latest
-	docker pull nginx:latest
-	docker pull python:3
-	docker pull rancher/socat-docker:latest
-	docker pull appropriate/curl:latest
-	docker pull docker:1.9
 
-test:
-	docker build -t jwilder/nginx-proxy:bats .
-	bats test
+build-webserver:
+	docker build --pull -t web test/requirements/web
+
+build-nginx-proxy-test-debian:
+	docker build --pull --build-arg NGINX_PROXY_VERSION="test" -f Dockerfile.debian -t nginxproxy/nginx-proxy:test .
+
+build-nginx-proxy-test-alpine:
+	docker build --pull --build-arg NGINX_PROXY_VERSION="test" -f Dockerfile.alpine -t nginxproxy/nginx-proxy:test .
+
+test-debian: build-webserver build-nginx-proxy-test-debian
+	test/pytest.sh
+
+test-alpine: build-webserver build-nginx-proxy-test-alpine
+	test/pytest.sh
+
+test: test-debian test-alpine
